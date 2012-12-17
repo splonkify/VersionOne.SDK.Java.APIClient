@@ -3,6 +3,7 @@ package com.versionone.apiclient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class Localizer implements ILocalizer {
 		if(!_map.containsKey(key)) {
 			Reader reader = null;
 			try {
-				reader = _connector.getData("?"+key);
+				reader = _connector.getData("?"+ URLEncoder.encode(key, "UTF-8"));
 				loadData(key, reader);
 			} catch (IOException e) {
 				return key;
