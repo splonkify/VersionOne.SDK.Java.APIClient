@@ -27,7 +27,7 @@ public class ServicesTester extends ServicesTesterBase {
 		Services subject = new Services(getMeta(), getDataConnector());
 
 		String changeComment = "Expected Change Comment";
-		String expectedUpdatePath = String.format("Data/Story?Comment='%s'", changeComment.replace(' ','+'));
+		String expectedUpdatePath = String.format("Data/Story?Comment=%%27%s%%27", changeComment.replace(' ','+'));
 		subject.save(myAsset, changeComment);
 
 		Assert.assertEquals(myAsset.getOid().getToken(), "Story:1025");
