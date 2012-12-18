@@ -3,6 +3,7 @@
  */
 package com.versionone.apiclient;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -27,9 +29,11 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.ByteArrayBuffer;
 
 /**
  * @author JKoberg
@@ -86,32 +90,42 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		return new Header[0];
 	}
 	
-	private String execute(HttpUriRequest request) throws ConnectionException {
-		//try {
-			HttpResponse response;
+	private byte[] execute(HttpUriRequest request) throws ConnectionException {
+		HttpResponse response;
+		try {
+			response = this.httpclient.execute(request);
+		} catch (IOException e1) {
+			throw new ConnectionException("Error executing HTTP request " + request.getURI().toString(), -1, e1);
+		}
+		StatusLine status = response.getStatusLine();
+		HttpEntity entity = response.getEntity();
+		log.fine("RESPONSE -----------------------------------------------------");
+		log.fine(response.getStatusLine().toString());
+		
+		
+		byte[] body;
+		try {
+			body = IOUtils.toByteArray(entity.getContent());
+		} catch (IllegalStateException e1) {
+			throw new ConnectionException("Error reading HTTP response " + request.getURI().toString(), status.getStatusCode(), e1);
+		} catch (IOException e1) {
+			throw new ConnectionException("Error reading HTTP response " + request.getURI().toString(), status.getStatusCode(), e1);
+		}
+		//String body = IOUtils.toString(entity.getContent(), "UTF-8");
+		if(status.getStatusCode() > 200 ) {
 			try {
-				response = this.httpclient.execute(request);
-				HttpEntity entity = response.getEntity();
-				String body = IOUtils.toString(entity.getContent(), "UTF-8");
-				log.fine("RESPONSE -----------------------------------------------------");
-				log.fine(response.getStatusLine().toString());
-				log.fine(body);
-				log.fine("--------------------------------------------------------------");
-				int code = response.getStatusLine().getStatusCode();
-				if(code >= 400) {
-					String message = "Received error " + code + " from URL " + request.getURI().toString();
-					throw new ConnectionException(message, code);
-				}
-				
-				return body;
-			} catch (ClientProtocolException e) {
-				throw new ConnectionException("Error processing request", e);
-			} catch (IOException e) {
-				throw new ConnectionException("Error processing request", e);
+				log.fine(new String(body, "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+				log.fine("Non-utf8 body");
 			}
-		//} catch (IOException e) {
-		//	throw new ConnectionException("Error executing http request", httpclient.);
-	    //	}
+		}
+		log.fine("--------------------------------------------------------------");
+		if(status.getStatusCode() >= 400) {
+			String message = "Received error " + status.getStatusCode() + " from URL " + request.getURI().toString();
+			throw new ConnectionException(message, status.getStatusCode());
+		}
+		
+		return body;
 	}
 	
 	/* (non-Javadoc)
@@ -123,7 +137,15 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		HttpGet request = new HttpGet(myurl);
 		request.setHeaders(getCustomHeaders());
 		log.fine("REQUEST: Getting url: " + myurl);
-		return new StringReader(this.execute(request));
+		byte[] body = this.execute(request);
+		try {
+			String bodystr = new String(body, "UTF-8");
+			return new StringReader(bodystr);
+		} catch (UnsupportedEncodingException e) {
+			throw new ConnectionException("Server returned non-UTF8 data", e);
+		}
+		
+		//return new StringReader(this.execute(request));
 	}
 
 	
@@ -139,11 +161,20 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		StringEntity postbody;
 		postbody = new StringEntity(data, ContentType.create("text/xml", "UTF-8"));
 		request.setEntity(postbody);
-		return new StringReader(this.execute(request));
+		byte[] body = this.execute(request);
+		try {
+			String bodystr = new String(body, "UTF-8");
+			return new StringReader(bodystr);
+		} catch (UnsupportedEncodingException e) {
+			throw new ConnectionException("Server returned non-UTF8 data", e);
+		}
 	}
 	
 	/* (non-Javadoc)
 	 * @see com.versionone.apiclient.IAPIConnector#beginRequest(java.lang.String, java.lang.String)
+	 * 
+	 * we're going to keep a string around to hold the request body instead of using all streams.
+	 * That way it's debuggable!
 	 */
 	
 	public OutputStream beginRequest(String path, String contentType) throws ConnectionException {		
@@ -172,21 +203,26 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		HttpUriRequest request;
 		
 		if(outstream.size() > 0) {
-			// TODO: How the hell do we determine the difference between wanting to truncate the file (writing a zero-length file) and wanting to GET the content?????
+			byte[] body = outstream.toByteArray();
+			
+			log.fine("REQUEST size: " + outstream.size());
 			try {
-				String body = outstream.toString("UTF-8");
-				log.fine("REQUEST\n");
-				log.fine(body);
-				StringEntity postbody = new StringEntity(body);
-				postbody.setContentType(contentType);
-				request = new HttpPost(url);
-				((HttpPost) request).setEntity(postbody);
+				log.fine(new String(body, "UTF-8"));
 			} catch (UnsupportedEncodingException e) {
-				throw new ConnectionException("Server response could not be decoded as UTF8", e);
+				log.fine("Non-UTF8 body of size " + body.length);
 			}
+			ByteArrayEntity postbody = new ByteArrayEntity(body);
+			postbody.setContentType(contentType);
+			log.fine("ENDREQUEST: Posting url: " + url);
+			request = new HttpPost(url);
+			((HttpPost) request).setEntity(postbody);
 		} else {
+			log.fine("ENDREQUEST: Getting url: " + url);
 			request = new HttpGet(url);
 		}
-		return IOUtils.toInputStream(this.execute(request));
+
+		log.fine("REQUEST: Getting url: " + url);
+		byte[] body = this.execute(request);
+		return new ByteArrayInputStream(body);
 	}
 }
