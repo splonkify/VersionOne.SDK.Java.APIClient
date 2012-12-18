@@ -45,26 +45,28 @@ public class Services implements IServices {
      */
     public QueryResult retrieve(Query query) throws ConnectionException,
             APIException, OidException {
-        String queryUrl = new QueryURLBuilder(query).toString();
-        Reader reader = null;
-        try {
-            reader = _connector.getData(queryUrl);
-            Document doc = XMLHandler.buildDocument(reader, queryUrl);
-            return parseQueryResult(doc.getDocumentElement(), query);
-        } catch (ConnectionException ex) {
-            if (ex.getServerResponseCode() == 404) {
-                return getEmptyQueryResult(query);
-            }
-            throw ex;
-        } finally {
-            if (null != reader) {
-                try {
-                    reader.close();
-                } catch (Exception e) {
-                    //do nothing
-                }
-            }
-        }
+        String queryUrl;
+		queryUrl = new QueryURLBuilder(query).toString(); 
+		Reader reader = null;
+		try {
+		    reader = _connector.getData(queryUrl);
+		    Document doc = XMLHandler.buildDocument(reader, queryUrl);
+		    return parseQueryResult(doc.getDocumentElement(), query);
+		} catch (ConnectionException ex) {
+		    if (ex.getServerResponseCode() == 404) {
+		        return getEmptyQueryResult(query);
+		    }
+		    throw ex;
+		} finally {
+		    if (null != reader) {
+		        try {
+		            reader.close();
+		        } catch (Exception e) {
+		            //do nothing
+		        }
+		    }
+		}
+        
     }
 
     private QueryResult getEmptyQueryResult(Query query) {
@@ -217,19 +219,19 @@ public class Services implements IServices {
                 path += "/" + asset.getOid().getKey().toString();
 
             if (comment != null && !comment.equals("")) {
+				comment = comment.replace("'",  "''").replace("\"", "\"\"");
 				try {
-					comment = URLEncoder.encode(comment, "UTF-8");
-				} catch (UnsupportedEncodingException e1) {
-					comment = comment.replace(" ","%20");
-					comment = comment.replace("&","%26");
-					comment = comment.replace("#","%23");
+					path += "?Comment=" + URLEncoder.encode("'" + comment + "'", "UTF-8");
+				} catch (UnsupportedEncodingException e) {
+					throw new IllegalArgumentException("Commit comment must be encodable by UTF8", e);
 				}
-                path += String.format("?Comment='%s'", comment);
             }
 
             Reader reader = null;
             try {
                 reader = _connector.sendData(path, data);
+                
+                
                 Document doc = XMLHandler.buildDocument(reader, path);
                 parseSaveAssetNode(doc.getDocumentElement(), asset);
             } catch (OidException e) {

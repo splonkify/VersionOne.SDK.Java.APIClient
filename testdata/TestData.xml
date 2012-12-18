@@ -372,7 +372,7 @@
 				</AttributeDefinition>
 			</AssetType>
 		</Response>
-		<Response path="rest-1.v1/Data/Story?Comment='Expected+Change+Comment'">
+		<Response path="rest-1.v1/Data/Story?Comment=%27Expected+Change+Comment%27">
 			<Asset href="/VersionOne.Web/rest-1.v1/Data/Story/1025" id="Story:1025">
 				<Attribute name="Name">Story 1</Attribute>
 			</Asset>
