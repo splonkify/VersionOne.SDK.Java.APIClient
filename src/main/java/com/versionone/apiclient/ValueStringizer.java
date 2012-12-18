@@ -1,7 +1,5 @@
 package com.versionone.apiclient;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.Date;
