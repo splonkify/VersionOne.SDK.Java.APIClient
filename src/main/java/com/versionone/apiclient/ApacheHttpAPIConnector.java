@@ -1,6 +1,4 @@
-/**
- * 
- */
+
 package com.versionone.apiclient;
 
 import java.io.ByteArrayInputStream;
@@ -50,10 +48,6 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 	private ProxyProvider proxy;
 	private Logger log;
 
-	/** Create a connector with credentials to be used for fetching (unauthenticated) metadata
-	 * 
-	 * @param url The VersionOne instance url.
-	 */
 	public ApacheHttpAPIConnector( String url) {
 		this(url, "", "");
 	}
@@ -75,9 +69,6 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		this.startedRequests = new HashMap<String, ImmutablePair<String, ByteArrayOutputStream>>();
 	}
 
-	/* (non-Javadoc)
-	 * @see com.versionone.apiclient.IAPIConnector#getData()
-	 */
 	
 	public Reader getData() throws ConnectionException {
 		// Some uses of this expect to create new V1APIConnector(pathpart) and then just call .getData()
@@ -128,9 +119,6 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		return body;
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.versionone.apiclient.IAPIConnector#getData(java.lang.String)
-	 */
 	
 	public Reader getData(String path) throws ConnectionException {
 		String myurl = this.url + path;
@@ -144,14 +132,8 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		} catch (UnsupportedEncodingException e) {
 			throw new ConnectionException("Server returned non-UTF8 data", e);
 		}
-		
-		//return new StringReader(this.execute(request));
 	}
 
-	
-	/* (non-Javadoc)
-	 * @see com.versionone.apiclient.IAPIConnector#sendData(java.lang.String, java.lang.String)
-	 */	
 
 	public Reader sendData(String path, String data) throws ConnectionException {
 		String myurl = this.url + path;
@@ -170,12 +152,6 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		}
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.versionone.apiclient.IAPIConnector#beginRequest(java.lang.String, java.lang.String)
-	 * 
-	 * we're going to keep a string around to hold the request body instead of using all streams.
-	 * That way it's debuggable!
-	 */
 	
 	public OutputStream beginRequest(String path, String contentType) throws ConnectionException {		
 		ByteArrayOutputStream outstream = new ByteArrayOutputStream();
@@ -185,9 +161,6 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		return outstream;		
 	}
 
-	/* (non-Javadoc)
-	 * @see com.versionone.apiclient.IAPIConnector#endRequest(java.lang.String)
-	 */
 	
 	public InputStream endRequest(String path) throws ConnectionException {
 		ImmutablePair<String, ByteArrayOutputStream> startedRequest = startedRequests.get(path);
