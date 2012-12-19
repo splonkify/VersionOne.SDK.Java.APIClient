@@ -225,4 +225,85 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		byte[] body = this.execute(request);
 		return new ByteArrayInputStream(body);
 	}
+	
+	
+
+	/*
+	private Map<String, ImmutablePair<OutputStream, Thread>> streamedRequests;
+	private Map<String, ImmutablePair<HttpResponse, Exception>> completedResponses;
+	
+	public OutputStream streamed_beginRequest(final String path, final String contentType) throws ConnectionException {
+		if(this.streamedRequests == null) {
+			this.streamedRequests = new HashMap<String, ImmutablePair<OutputStream, Thread>>();
+			this.completedResponses = new HashMap<String, ImmutablePair<HttpResponse, Exception>>();
+		}
+		final PipedInputStream streamForClientToRead = new PipedInputStream();
+		final PipedOutputStream streamForCallerToWrite;
+		try {
+			streamForCallerToWrite = new PipedOutputStream(streamForClientToRead);
+		} catch (IOException e) {
+			throw new ConnectionException("Error starting request", e);
+		}
+		// start the request in another thread to consume the piped input that our caller will writing
+		// to the pipedoutputstream we return to them.
+		Runnable threadAction = new Runnable(){
+			public void run(){
+				try {
+					InputStreamEntity rawbody = new InputStreamEntity(streamForClientToRead, -1, ContentType.create(contentType));
+					/// the following guy just converts the body to a bytearray if it needs to be repeated!
+					BufferedHttpEntity postbody = new BufferedHttpEntity(rawbody);
+					HttpPost request = new HttpPost(url + path);
+					request.setEntity(postbody);
+					HttpResponse response = httpclient.execute(request);
+					completedResponses.put(path, new ImmutablePair<HttpResponse, Exception>(response, null));
+				} catch (ClientProtocolException e) {
+					completedResponses.put(path, new ImmutablePair<HttpResponse, Exception>(null, e));
+				} catch (IOException e) {
+					completedResponses.put(path, new ImmutablePair<HttpResponse, Exception>(null, e));
+				}
+	      }
+	    };
+	    
+		Thread requestRunner = new Thread(threadAction);
+		requestRunner.start();
+		this.streamedRequests.put(path, new ImmutablePair<OutputStream, Thread>(streamForCallerToWrite, requestRunner));
+		return streamForCallerToWrite;
+		}
+
+
+	
+	public InputStream streamed_endRequest(String path) throws ConnectionException {
+		if(!streamedRequests.containsKey(path)) {
+			throw new ConnectionException("Must begin request before ending it");
+		}
+		ImmutablePair<OutputStream, Thread> storedReq = this.streamedRequests.get(path);
+		try {
+			storedReq.left.close();
+		} catch (IOException e1) {
+			throw new ConnectionException("Request failed.", e1);
+		}
+		Thread requestRunner = storedReq.right;
+		streamedRequests.remove(path);
+		try {
+			requestRunner.join();
+		} catch (InterruptedException e) {
+			throw new ConnectionException("Request interrupted.", e);
+		}
+		//request.releaseConnection();
+		ImmutablePair<HttpResponse, Exception> finishedResponse = completedResponses.get(path);
+		HttpResponse response = finishedResponse.left;
+		Exception execException = finishedResponse.right;
+		if(execException != null) {
+			throw new ConnectionException("Error executing HTTP request", execException);
+		}
+		try {
+			return response.getEntity().getContent();
+		} catch (IllegalStateException e) {
+			throw new ConnectionException("Error reading response", e);
+		} catch (IOException e) {
+			throw new ConnectionException("Error reading response", e);
+		}
+		
+	}
+	*/
 }
