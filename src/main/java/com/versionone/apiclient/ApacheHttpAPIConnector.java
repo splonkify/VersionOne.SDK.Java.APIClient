@@ -2,13 +2,13 @@
 package com.versionone.apiclient;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -18,20 +18,20 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.ByteArrayBuffer;
 
 /**
  * @author JKoberg
@@ -45,7 +45,7 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 	private Credentials creds;
 	protected DefaultHttpClient httpclient;
 	private Map<String,ImmutablePair<String, ByteArrayOutputStream>> startedRequests;
-	private ProxyProvider proxy;
+	private ProxyProvider proxyprov;
 	private Logger log;
 
 	public ApacheHttpAPIConnector( String url) {
@@ -56,20 +56,30 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		this(url, username, password, null);
 	}
 	
-	public ApacheHttpAPIConnector( String url, String username, String password, ProxyProvider proxy) {
+	public ApacheHttpAPIConnector( String url, String username, String password, ProxyProvider proxyprov) {
 		this.log = Logger.getGlobal();
 		this.url = url;
 		this.creds = new UsernamePasswordCredentials(username, password);
-		this.proxy = proxy;
-		if(this.proxy != null) {
-			throw new NotImplementedException();
-		}
 		this.httpclient = new DefaultHttpClient();
 		this.httpclient.getCredentialsProvider().setCredentials(AuthScope.ANY, creds);
+		this.setProxy(proxyprov);
 		this.startedRequests = new HashMap<String, ImmutablePair<String, ByteArrayOutputStream>>();
 	}
 
-	
+	public void setProxy(ProxyProvider proxyprov) {
+		this.proxyprov = proxyprov;
+		if(this.proxyprov != null) {
+			URI proxyaddress = proxyprov.getAddress();
+			HttpHost proxyhost = new HttpHost(proxyaddress.getHost(), proxyaddress.getPort());
+			AuthScope proxyscope = new AuthScope(proxyhost, AuthScope.ANY_REALM, AuthScope.ANY_SCHEME);
+			Credentials proxycreds = new UsernamePasswordCredentials(proxyprov.getUserName(), proxyprov.getPassword());
+			this.httpclient.getCredentialsProvider().setCredentials(proxyscope, proxycreds);
+			this.httpclient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxyhost);
+		} else {
+			this.httpclient.getParams().removeParameter(ConnRoutePNames.DEFAULT_PROXY);
+		}
+	}
+
 	public Reader getData() throws ConnectionException {
 		// Some uses of this expect to create new V1APIConnector(pathpart) and then just call .getData()
 		// to get everything from that path part. (IN other words, using additionally-constructed V1APIConnectors to represent different path prefixes)
@@ -160,6 +170,7 @@ public class ApacheHttpAPIConnector implements IAPIConnector {
 		startedRequests.put(path, startedRequest);
 		return outstream;		
 	}
+
 
 	
 	public InputStream endRequest(String path) throws ConnectionException {
