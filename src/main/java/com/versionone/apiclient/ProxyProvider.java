@@ -21,6 +21,16 @@ public class ProxyProvider {
 		this.userName = userName;
 		this.password = password;
 	}
+	
+	public URI getAddress() {
+		return this.address;
+	}
+	public String getUserName() {
+		return this.userName;
+	}
+	public String getPassword() {
+		return this.password;
+	}
 
 	protected java.net.Proxy getProxyObject() {
 		java.net.Proxy proxy = new java.net.Proxy(java.net.Proxy.Type.HTTP, new InetSocketAddress(address.getHost(), address.getPort()));
