@@ -1,12 +1,15 @@
 package com.versionone.apiclient;
 
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BuildResult {
-    public final List<NameValuePair> querystringParts = new ArrayList<NameValuePair>();
+    public final List<BasicNameValuePair> querystringParts = new ArrayList<BasicNameValuePair>();
     public final List<String> pathParts = new ArrayList<String>();
 
     public String toUrl() {
