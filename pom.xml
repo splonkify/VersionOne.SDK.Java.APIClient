@@ -104,21 +104,34 @@
         <url>http://localhost/VersionOne.SDK.Java.APIClient.Tests</url>
     </ciManagement>
     <dependencies>
-        <dependency>
-            <groupId>org.fitnesse</groupId>
-            <artifactId>fitnesse</artifactId>
-            <version>20111025</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-junit4</artifactId>
-            <version>2.6.0-RC2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jmock</groupId>
-            <artifactId>jmock-legacy</artifactId>
-            <version>2.6.0-RC2</version>
-        </dependency>
+    	<dependency>
+    		<groupId>org.jmock</groupId>
+    		<artifactId>jmock-junit4</artifactId>
+    		<version>2.6.0-RC2</version>
+    		<type>jar</type>
+    		<optional>false</optional>
+    	</dependency>
+    	<dependency>
+    		<groupId>org.jmock</groupId>
+    		<artifactId>jmock-legacy</artifactId>
+    		<version>2.6.0-RC2</version>
+    		<type>jar</type>
+    		<optional>false</optional>
+    	</dependency>
+    	<dependency>
+    		<groupId>org.fitnesse</groupId>
+    		<artifactId>fitnesse</artifactId>
+    		<version>20121220</version>
+    		<type>jar</type>
+    		<optional>false</optional>
+    	</dependency>
+    	<dependency>
+    		<groupId>commons-cli</groupId>
+    		<artifactId>commons-cli</artifactId>
+    		<version>1.2</version>
+    		<type>jar</type>
+    		<optional>false</optional>
+    	</dependency>
     </dependencies>
     <organization>
         <name>Version One, Inc.</name>
